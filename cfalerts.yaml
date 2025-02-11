@@ -1,0 +1,88 @@
+groups:
+- name: CloudflareAlerts
+  rules:
+  - alert: CloudflareHighTrafficSpike
+    annotations:
+      description: "Website {{ $labels.zone }} is experiencing unusually high
+        visitor traffic ({{ $value | printf \"%.2f\" }} requests/second).\nImpact:
+        Website performance may be affected and could result in slower response
+        times.\nAction: \n- Monitor website performance and user experience\n-
+        Check if traffic is legitimate (marketing campaign, viral content) or
+        potential attack\n- Consider scaling resources if needed\n\n"
+      summary: Unusual Website Traffic Surge
+    expr: rate(cloudflare_zone_requests_total[5m]) > 1000
+    for: 5m
+    labels:
+      severity: warning
+  - alert: CloudflareHighThreatRate
+    annotations:
+      description: |+
+        Website {{ $labels.zone }} is experiencing high rate of security threats ({{ $value | printf "%.2f" }} threats/second).
+        Impact: Potential security breach attempts or DDoS attack in progress.
+        Action:
+        - Review security logs for attack patterns
+        - Verify Cloudflare security settings
+        - Consider enabling additional security measures
+        - Contact security team if pattern continues
+
+      summary: Website Under Attack
+    expr: rate(cloudflare_zone_threats_total[20m]) > 40
+    for: 20m
+    labels:
+      severity: critical
+  - alert: CloudflareHighFirewallEvents
+    annotations:
+      description: |+
+        Website {{ $labels.zone }} firewall is blocking high number of requests ({{ $value | printf "%.2f" }} blocks/second).
+        Impact: Possible brute force attack or bot activity targeting the website.
+        Action:
+        - Review blocked traffic patterns
+        - Verify firewall rules are working as intended
+        - Check for false positives affecting legitimate users
+
+      summary: High Rate of Blocked Access Attempts
+    expr: rate(cloudflare_zone_firewall_events_count{action="block"}[5m]) > 1000
+    for: 5m
+    labels:
+      severity: warning
+  - alert: CloudflareCountryBasedAttack
+    annotations:
+      description: |+
+        Website {{ $labels.zone }} is receiving high threat activity from {{ $labels.country }}.
+        Impact: Potential targeted attack from specific geographic location.
+        Action:
+        - Review traffic patterns from affected country
+        - Consider implementing geographic-based access rules
+        - Monitor for similar patterns from other countries
+
+      summary: Geographic-Based Attack Detected
+    expr: rate(cloudflare_zone_threats_country[20m]) > 20
+    for: 20m
+    labels:
+      severity: warning
+  - alert: CloudflareHighBandwidthUsage
+    annotations:
+      description: "Website {{ $labels.zone }} is transferring large amounts of
+        data ({{ $value | printf \"%.2f\" }} bytes/second).\nImpact: \n- May affect
+        monthly bandwidth costs\n- Could indicate content hotlinking or unauthorized
+        downloads\nAction:\n- Identify high-bandwidth content\n- Check for unauthorized
+        content sharing\n- Review bandwidth optimization options\n\n"
+      summary: High Website Data Transfer
+    expr: rate(cloudflare_zone_bandwidth_total[5m]) > 10485760
+    for: 5m
+    labels:
+      severity: warning
+  - alert: CloudflareHighErrorRate
+    annotations:
+      description: "Website {{ $labels.zone }} is showing high error rate ({{
+        $value | printf \"%.2f\" }}% of requests failing).\nImpact: \n- Users
+        may be experiencing service disruptions\n- Potential loss of business
+        or user satisfaction\nAction:\n- Check website backend health\n- Review
+        error logs for common patterns\n- Verify all systems are functioning properly\n-
+        Test critical user workflows\n\n"
+      summary: Website Error Rate Increasing
+    expr: sum(rate(cloudflare_zone_requests_status{status=~"5.."}[5m])) by (zone)
+      / sum(rate(cloudflare_zone_requests_total[5m])) by (zone) * 100 > 5
+    for: 5m
+    labels:
+      severity: warning
